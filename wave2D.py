@@ -1,3 +1,7 @@
+# Code adapted from
+# Finite difference methods for wave equations
+# by Langtangen and Linge
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
