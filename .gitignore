@@ -1,0 +1,36 @@
+# Estä kaikki Python-tiedostot oletuksena
+*.py
+
+# Salli vain nämä kaksi tiedostoa
+!comp_wave1D.py
+!wave2D.py
+
+# PDF-tiedostot
+*.pdf
+
+#Word-tiedosto
+*.docx
+
+# Käännetyt/välimuistitiedostot
+__pycache__/
+*.pyc
+*.pyd
+*.so
+
+# Virtuaaliympäristöt
+venv/
+.venv/
+env/
+
+# Data- ja tulostiedostot
+*.csv
+*.dat
+*.npy
+
+# Jätä requirements.txt mukaan
+!requirements.txt
+
+# Käyttöjärjestelmä- ja editorikohtaiset roskat
+.DS_Store
+Thumbs.db
+.vscode/
