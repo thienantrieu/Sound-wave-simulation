@@ -218,7 +218,7 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
                 print('Using Numpy pseudo-random number generation')
                 random_list = np.random.rand(2,len(It))*4*Lx-2*Lx
         else:
-            # Random values from uniform distribtion [-2*Lx, 2*Lx]
+            # Random values from uniform distribution [-2*Lx, 2*Lx]
             random_list = np.random.rand(2,len(It))*4*Lx-2*Lx
 
     for n in It[1:-1]:
