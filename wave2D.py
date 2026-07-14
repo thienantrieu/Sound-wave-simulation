@@ -21,6 +21,7 @@ def scheme_ij(u_1, u_2, k_1, k_2, k_3, k_4,
     u_xx = k_3*Cx2*(u_1[im1,j] - 2*u_1[i,j] + u_1[ip1,j])
     u_yy = k_3*Cy2*(u_1[i,jm1] - 2*u_1[i,j] + u_1[i,jp1])
     f_term = k_4*dt2*f(x, y, t_1)
+
     return u_ij + u_xx + u_yy + f_term
 
 def scheme_vector_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
@@ -49,43 +50,46 @@ def scheme_vector_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     if bc['W'] is None:
         u[i,j] = scheme_ij(
             u_1, u_2, k_1, k_2, k_3, k_4,
-            f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
-        u[i,j] = bc['W'](xv[i,:], yv[:,j])
+        u[i,j] = bc['W'](x[i], y[j])
 
     i = Ix[-1]
     im1 = i-1
     ip1 = im1
     if bc['E'] is None:
-        u[i,j] = scheme_ij(
-                u_1, u_2, k_1, k_2, k_3, k_4,
-                f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
-                i, j, im1, ip1, jm1, jp1)
+            u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
+            i, j, im1, ip1, jm1, jp1)
     else:
-        u[i,j] = bc['E'](xv[i], yv[j])
+        u[i,j] = bc['E'](x[i], y[j])
 
     j = Iy[0]
     jp1 = j+1
-    jm1 = jp1
+    jm1 = jp1    
+    i = slice(1, Nx)              
+    im1 = slice(0, Nx-1)          
+    ip1 = slice(2, Nx+1)              
     if bc['S'] is None:
-        u[i,j] = scheme_ij(
+            u[i,j] = scheme_ij(
             u_1, u_2, k_1, k_2, k_3, k_4,
-            f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
-        u[i,j] = bc['S'](xv[i], yv[j])
+        u[i,j] = bc['S'](x[i], y[j])
 
     j = Iy[-1]
     jm1 = j-1
-    jp1 = jm1
+    jp1 = jm1             
     if bc['N'] is None:
         u[i,j] = scheme_ij(
             u_1, u_2, k_1, k_2, k_3, k_4,
-            f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
-        u[i,j] = bc['N'](xv[i], yv[j])
+        u[i,j] = bc['N'](x[i], y[j])
 
     # Corner points
     i = j = Iy[0]
@@ -163,10 +167,10 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     else:
         for j in Iy[1:-1]:
             u[i,j] = bc['W'](x[i], y[j])
+
     i = Ix[-1]
     im1 = i-1
     ip1 = im1
-
     if bc['E'] is None:
         for j in Iy[1:-1]:
             jm1 = j-1; jp1 = j+1
