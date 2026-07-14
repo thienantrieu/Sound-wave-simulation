@@ -1,6 +1,8 @@
 # Code adapted from
 # Finite difference methods for wave equations
 # by Langtangen and Linge
+# https://github.com/hplgit/fdm-book
+# Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,7 +46,7 @@ def maximize_c(c,L):
     elif callable(c):
         return max([c(x) for x in np.linspace(0, L, 101)])
 
-def solver(I, c,b, L, T, dt, C, randomness, performance, version,noise, V, f, bd_0, bd_L,callback):
+def solver(I, c,b, L, T, dt, C, noise, randomness, performance, version, V, f, bd_0, bd_L,callback):
 
     s = time.process_time()
 
@@ -109,12 +111,13 @@ def solver(I, c,b, L, T, dt, C, randomness, performance, version,noise, V, f, bd
             callback(u_n, xs, ts, 0)
     
     # special first timestep formula
-    if version == 'vectorized':
+    if version == 'vector':
         u[1:-1] = u_n[1:-1] - (0.5*b*dt-1)*V(xs[1:-1])*dt + 0.25*C2*((q[1:-1] + q[2:]) * (u_n[2:] - u_n[1:-1]) - (q[1:-1] + q[:-2]) * (u_n[1:-1] - u_n[:-2])) + 0.5*dt2 * f(xs[1:-1], 0)
-    else:
-        #scalar calculations
+    elif version == 'scalar':
         for i in range(1, Nx):
             u[i] = u_n[i] - (0.5*b*dt-1)*V(xs[i])*dt + 0.25*C2*((q[i] + q[i+1]) * (u_n[i+1] - u_n[i]) - (q[i] + q[i-1]) * (u_n[i] - u_n[i-1])) + 0.5*dt2 * f(xs[i], 0)
+    else: 
+        raise ValueError(f"Unknown version: {version!r}. Allowed values: 'vector', 'scalar'. ")
 
     if bd_0 is None:
         # Neumann
@@ -152,13 +155,13 @@ def solver(I, c,b, L, T, dt, C, randomness, performance, version,noise, V, f, bd
         u_n = u_n + u2
         u_nm1 = u_nm1 + u2
 
-        # Dampening u[1:-1]
-        if version == 'vectorized':
+        if version == 'vector':
             u[1:-1] = (1/(1+0.5*b*dt))*((0.5*b*dt-1)*u_nm1[1:-1] + 2 * u_n[1:-1] + 0.5*C2 * ((q[1:-1] + q[2:]) * (u_n[2:] - u_n[1:-1]) - (q[1:-1] + q[:-2]) * (u_n[1:-1] - u_n[:-2])) + dt2 * f(xs[1:-1], ts[n]))
-        else:  
-            #scalar calculations
+        elif version == 'scalar':  
             for i in range(1, Nx):
                 u[i] = (1/(1+0.5*b*dt))*((0.5*b*dt-1)*u_nm1[i] + 2 * u_n[i] + 0.5*C2 * ((q[i] + q[i+1]) * (u_n[i+1] - u_n[i]) - (q[i] + q[i-1]) * (u_n[i] - u_n[i-1])) + dt2 * f(xs[i], ts[n]))
+        else: 
+            raise ValueError(f"Unknown version: {version!r}. Allowed values: 'vector', 'scalar'. ")
 
         if bd_0 is None:
             # Neumann
@@ -220,7 +223,7 @@ class PlotVariableSpeed():
 def main(
         L = 37,                     # Depth (metres)
         C = 1,                      # CFL condition
-        b = 10,                     # dampening factor
+        b = 10,                     # Dampening factor
         Nx = 500,                   # Spatial mesh
         T = 0.1,                    # Animation time
         pulse_type = 'gaussian',
@@ -228,12 +231,13 @@ def main(
         sigma = 0.05,
         temp1 = 9,                  # Temperature (Celsius)
         sal1 = 6,                   # Salinity (ppt)
+        noise = True,               # Noise generation
         randomness = False,         # Pseudo-random on default
         performance = 0,            # >= 0 shows everything
                                     # 1 shows performance metrics and pressure difference at sea bottom and sea surface
                                     # <= 2 shows only performance metrics 
-        version = 'vectorized',
-        noise = True
+        version = 'vector'          # 'vector' uses vector calculation
+                                    # 'scalar' uses scalar calculations
         ):   
 
     tracemalloc.start()
@@ -245,7 +249,8 @@ def main(
     elif pulse_type == 'half-cosinehat':
         I = lambda x: np.cos(np.pi * x / (4 * sigma)) if -2 * sigma <= x <= 2 * sigma else 0
     else:
-        raise ValueError(f"Pulse type {pulse_type} not implemented yet")
+        raise ValueError(f"Unknown pulse type {pulse_type!r}. " 
+                         f"Allowed values: 'gaussian', 'cosinehat', 'half-cosinehat'.")
     
     c = lambda x: 1449.2 + 4.6*temp1 - 0.055*temp1**2 + 0.00029*temp1**3 + (1.34 - 0.01*temp1)*(sal1-35) + 0.016*x
 
@@ -258,7 +263,7 @@ def main(
 
     dt = L / (Nx * c_max)
 
-    ts, receiverA, receiverB, timer = solver(I, c,b, L, T, dt, C, randomness, performance, version,noise, V=None, f = None, bd_0=None, bd_L=None, callback=plotter)
+    ts, receiverA, receiverB, timer = solver(I, c,b, L, T, dt, C, noise, randomness, performance, version, V=None, f = None, bd_0=None, bd_L=None, callback=plotter)
 
     _, peak = tracemalloc.get_traced_memory()
     print(f'Nx: {Nx}')

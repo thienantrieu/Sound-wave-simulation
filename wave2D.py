@@ -1,6 +1,10 @@
 # Code adapted from
 # Finite difference methods for wave equations
 # by Langtangen and Linge
+# https://github.com/hplgit/fdm-book
+# Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+
+# Developed with assistance from Claude Sonnet 5
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,7 +13,7 @@ import requests
 import time
 import tracemalloc
 
-def scheme_ij(u, u_1, u_2, k_1, k_2, k_3, k_4,
+def scheme_ij(u_1, u_2, k_1, k_2, k_3, k_4,
               f, dt2, Cx2, Cy2, x, y, t_1,
               i, j, im1, ip1, jm1, jp1):
     
@@ -18,6 +22,117 @@ def scheme_ij(u, u_1, u_2, k_1, k_2, k_3, k_4,
     u_yy = k_3*Cy2*(u_1[i,jm1] - 2*u_1[i,j] + u_1[i,jp1])
     f_term = k_4*dt2*f(x, y, t_1)
     return u_ij + u_xx + u_yy + f_term
+
+def scheme_vector_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
+                       f, dt2, Cx2, Cy2, x, y, t_1, Nx, Ny,
+                       bc, xv, yv):
+    
+    Ix = range(0, u.shape[0])
+    Iy = range(0, u.shape[1])
+
+    # Interior points
+    i = slice(1, Nx)
+    j = slice(1, Ny)
+    im1 = slice(0, Nx-1)
+    ip1 = slice(2, Nx+1)
+    jm1 = slice(0, Ny-1)
+    jp1 = slice(2, Ny+1)
+    u[i,j] = scheme_ij(
+        u_1, u_2, k_1, k_2, k_3, k_4,
+        f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+        i, j, im1, ip1, jm1, jp1)
+    
+    # Boundary points
+    i = Ix[0]
+    ip1 = i+1
+    im1 = ip1
+    if bc['W'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['W'](xv[i,:], yv[:,j])
+
+    i = Ix[-1]
+    im1 = i-1
+    ip1 = im1
+    if bc['E'] is None:
+        u[i,j] = scheme_ij(
+                u_1, u_2, k_1, k_2, k_3, k_4,
+                f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+                i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['E'](xv[i], yv[j])
+
+    j = Iy[0]
+    jp1 = j+1
+    jm1 = jp1
+    if bc['S'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['S'](xv[i], yv[j])
+
+    j = Iy[-1]
+    jm1 = j-1
+    jp1 = jm1
+    if bc['N'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, xv[i,:], yv[:,j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['N'](xv[i], yv[j])
+
+    # Corner points
+    i = j = Iy[0]
+    ip1 = i+1; jp1 = j+1
+    im1 = ip1; jm1 = jp1
+    if bc['S'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['S'](x[i], y[j])
+
+    i = Ix[-1]; j = Iy[0]
+    im1 = i-1; jp1 = j+1
+    ip1 = im1; jm1 = jp1
+    if bc['S'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['S'](x[i], y[j])
+
+    i = Ix[-1]; j = Iy[-1]
+    im1 = i-1; jm1 = j-1
+    ip1 = im1; jp1 = jm1
+    if bc['N'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['N'](x[i], y[j])
+
+    i = Ix[0]; j = Iy[-1]
+    ip1 = i+1; jm1 = j-1
+    im1 = ip1; jp1 = jm1
+    if bc['N'] is None:
+        u[i,j] = scheme_ij(
+            u_1, u_2, k_1, k_2, k_3, k_4,
+            f, dt2, Cx2, Cy2, x[i], y[j], t_1,
+            i, j, im1, ip1, jm1, jp1)
+    else:
+        u[i,j] = bc['N'](x[i], y[j])
+
+    return u
 
 def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
                        f, dt2, Cx2, Cy2, x, y, t_1, Nx, Ny,
@@ -30,9 +145,10 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
         for j in Iy[1:-1]:
             im1 = i-1; ip1 = i+1; jm1 = j-1; jp1 = j+1
             u[i,j] = scheme_ij(
-                u, u_1, u_2, k_1, k_2, k_3, k_4,
+                u_1, u_2, k_1, k_2, k_3, k_4,
                 f, dt2, Cx2, Cy2, x[i], y[j], t_1,
-                i, j, im1, ip1, jm1, jp1)
+                i, j, im1, ip1, jm1, jp1)        
+    
     # Boundary points
     i = Ix[0]
     ip1 = i+1
@@ -41,7 +157,7 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
         for j in Iy[1:-1]:
             jm1 = j-1; jp1 = j+1
             u[i,j] = scheme_ij(
-                u, u_1, u_2, k_1, k_2, k_3, k_4,
+                u_1, u_2, k_1, k_2, k_3, k_4,
                 f, dt2, Cx2, Cy2, x[i], y[j], t_1,
                 i, j, im1, ip1, jm1, jp1)
     else:
@@ -50,16 +166,18 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     i = Ix[-1]
     im1 = i-1
     ip1 = im1
+
     if bc['E'] is None:
         for j in Iy[1:-1]:
             jm1 = j-1; jp1 = j+1
             u[i,j] = scheme_ij(
-                u, u_1, u_2, k_1, k_2, k_3, k_4,
+                u_1, u_2, k_1, k_2, k_3, k_4,
                 f, dt2, Cx2, Cy2, x[i], y[j], t_1,
                 i, j, im1, ip1, jm1, jp1)
     else:
         for j in Iy[1:-1]:
             u[i,j] = bc['E'](x[i], y[j])
+
     j = Iy[0]
     jp1 = j+1
     jm1 = jp1
@@ -67,12 +185,13 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
         for i in Ix[1:-1]:
             im1 = i-1; ip1 = i+1
             u[i,j] = scheme_ij(
-                u, u_1, u_2, k_1, k_2, k_3, k_4,
+                u_1, u_2, k_1, k_2, k_3, k_4,
                 f, dt2, Cx2, Cy2, x[i], y[j], t_1,
                 i, j, im1, ip1, jm1, jp1)
     else:
         for i in Ix[1:-1]:
             u[i,j] = bc['S'](x[i], y[j])
+
     j = Iy[-1]
     jm1 = j-1
     jp1 = jm1
@@ -80,7 +199,7 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
         for i in Ix[1:-1]:
             im1 = i-1; ip1 = i+1
             u[i,j] = scheme_ij(
-                u, u_1, u_2, k_1, k_2, k_3, k_4,
+                u_1, u_2, k_1, k_2, k_3, k_4,
                 f, dt2, Cx2, Cy2, x[i], y[j], t_1,
                 i, j, im1, ip1, jm1, jp1)
     else:
@@ -93,7 +212,7 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     im1 = ip1; jm1 = jp1
     if bc['S'] is None:
         u[i,j] = scheme_ij(
-            u, u_1, u_2, k_1, k_2, k_3, k_4,
+            u_1, u_2, k_1, k_2, k_3, k_4,
             f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
@@ -104,7 +223,7 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     ip1 = im1; jm1 = jp1
     if bc['S'] is None:
         u[i,j] = scheme_ij(
-            u, u_1, u_2, k_1, k_2, k_3, k_4,
+            u_1, u_2, k_1, k_2, k_3, k_4,
             f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
@@ -115,7 +234,7 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     ip1 = im1; jp1 = jm1
     if bc['N'] is None:
         u[i,j] = scheme_ij(
-            u, u_1, u_2, k_1, k_2, k_3, k_4,
+            u_1, u_2, k_1, k_2, k_3, k_4,
             f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
@@ -126,7 +245,7 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
     im1 = ip1; jp1 = jm1
     if bc['N'] is None:
         u[i,j] = scheme_ij(
-            u, u_1, u_2, k_1, k_2, k_3, k_4,
+            u_1, u_2, k_1, k_2, k_3, k_4,
             f, dt2, Cx2, Cy2, x[i], y[j], t_1,
             i, j, im1, ip1, jm1, jp1)
     else:
@@ -134,15 +253,23 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
 
     return u
 
-def init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, pos_x, pos_y):
+def init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, pos_x, pos_y, xv,yv,version):
 # Load initial condition into u_1
-    for i in Ix:
-        for j in Iy:
-            u_1[i,j] = I(x[i], y[j],pos_x,pos_y)
+    if version == 'scalar':
+        for i in Ix:
+            for j in Iy:
+                u_1[i,j] = I(x[i], y[j],pos_x,pos_y)
 
-    u = scheme_scalar_mesh(u, u_1, u_2, 0.5, 0, 0.5, 0.5,
-                               f, dt2, Cx2, Cy2, x, y, t[0],
-                               Nx, Ny, bc)
+        u = scheme_scalar_mesh(u, u_1, u_2, 0.5, 0, 0.5, 0.5,
+                                f, dt2, Cx2, Cy2, x, y, t[0],
+                                Nx, Ny, bc)
+    elif version == 'vector': 
+        u_1[:,:] = I(xv, yv, pos_x, pos_y)
+        u = scheme_vector_mesh(u, u_1, u_2, 0.5, 0, 0.5, 0.5,
+                                f, dt2, Cx2, Cy2, x, y, t[0],
+                                Nx, Ny, bc,xv,yv)
+    else: 
+        raise ValueError(f"Unknown version: {version!r}. Allowed values: 'scalar', 'vector'.")
 
     u_2[:,:] = u_1
     u_1[:,:] = u
@@ -164,7 +291,7 @@ def gen_random(It, x):
             helper = helper + str(i)
     return random_list
 
-def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, performance,
+def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, performance, version,
            user_action=None,
            verbose=True):
     
@@ -174,7 +301,9 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
     y = np.linspace(0, Ly, Ny+1)  
     dx = x[1] - x[0]
     dy = y[1] - y[0]
-    xv = x[:,np.newaxis]          # for vectorized function evaluations
+
+    # for vectorized function evaluations
+    xv = x[:,np.newaxis]          
     yv = y[np.newaxis,:]
 
     if isinstance(c, (float, int)):
@@ -200,7 +329,8 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
     Iy = range(0, Ny+1)
     It = range(0, Nt+1)
 
-    u, u_1, u_2 = init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, 0, 0)
+    if turbulence==False:
+        u, u_1, u_2 = init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, 0, 0, xv, yv, version)
 
     wave_length = 4
 
@@ -222,20 +352,27 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
             random_list = np.random.rand(2,len(It))*4*Lx-2*Lx
 
     for n in It[1:-1]:
-        u = scheme_scalar_mesh(u, u_1, u_2, 1, 1, 1, 1,
+        if version == 'scalar':
+            u = scheme_scalar_mesh(u, u_1, u_2, 1, 1, 1, 1,
                                    f, dt2, Cx2, Cy2, x, y, t[n],
                                    Nx, Ny, bc)
+        elif version == 'vector':
+            u = scheme_vector_mesh(u, u_1, u_2, 1, 1, 1, 1,
+                                   f, dt2, Cx2, Cy2, x, y, t[n],
+                                   Nx, Ny, bc, xv, yv)
+        else: 
+            raise ValueError(f"Unknown version: {version!r}. Allowed values: 'scalar', 'vector'.")
         
         if noise == True:
             if turbulence == True:
                 if n % 10 == 0:
                     for i in range(0,round(wave_length/2)+1):
-                        u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, -Lx/2+t[n],i)
+                        u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, -Lx/2+t[n],i, xv,yv, version)
                         u = u + u2
                         u_1 = u_1 + u_12
                         u_2 = u_2 + u_22
             else:
-                u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, random_list[0,n],random_list[1,n])
+                u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, random_list[0,n],random_list[1,n], xv, yv, version)
                 u = u + u2
                 u_1 = u_1 + u_12
                 u_2 = u_2 + u_22
@@ -251,20 +388,22 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
     return e-s
 
 
-def main(Lx = 200,            # Spatial length in x-axis
-         Ly = 200,            # Spatial length in y-axis
-         Nx = 50,             # Spatial mesh in x-axis
-         Ny = 50,             # Spatial mesh in y-axis
-         T = 0.5,             # Animation time
-         pulse_type = 'gaussian',
-         temp = 9,            # Temperature (Celsius)
-         sal = 6,             # Salinity (ppt)
-         z = 0,               # Depth (metres)
-         turbulence = False,  # Simulates turbulent rain
-         randomness = False,  # Pseudo-random on default
-         noise = True,        # Simulates random drops
-         performance = 0      # >= 0 shows everything
-                              # <= 2 shows only performance metrics 
+def main(Lx = 200,           # Spatial length in x-axis
+        Ly = 200,            # Spatial length in y-axis
+        Nx = 50,             # Spatial mesh in x-axis
+        Ny = 50,             # Spatial mesh in y-axis
+        T = 0.5,             # Animation time
+        pulse_type = 'gaussian',
+        temp = 9,            # Temperature (Celsius)
+        sal = 6,             # Salinity (ppt)
+        z = 0,               # Depth (metres)
+        noise = True,        # Simulates random drops
+        turbulence = False,  # Simulates turbulent rain. Noise needs to be True to have effect
+        randomness = False,  # Pseudo-random on default. Noise needs to be True to have effect
+        performance = 0,     # >= 0 shows everything
+                             # <= 2 shows only performance metrics 
+        version = 'scalar'   # 'scalar' uses scalar calculations
+                             # 'vector' uses vector calculations 
          ):
     
     tracemalloc.start()
@@ -279,8 +418,11 @@ def main(Lx = 200,            # Spatial length in x-axis
         I = lambda x, y, pos_x, pos_y: -np.exp(-(x-Lx/2.0+pos_x)**2/2.0 -(y-Ly/2.0+pos_y)**2/2.0)
     elif pulse_type == '1D':
         I = lambda x, y, pos_x, pos_y: 0 if abs(x-L/2.0) > 0.1 else 1
+    else: 
+        raise ValueError(f"Unknown pulse type {pulse_type!r}. " 
+                         f"Allowed values: 'gaussian', 'drop', '1D'.")
             
-    f = lambda x, y, t: 0 if isinstance(x, (float,int)) else np.zeros(x.size)
+    f = lambda x, y, t: np.zeros_like(x * y)
 
     bc = dict(N=None, W=None, E=None, S=None)
 
@@ -299,7 +441,7 @@ def main(Lx = 200,            # Spatial length in x-axis
         ax.set_title('t=%g' % t[n])
         plt.pause(0.001) 
 
-    timer = solver(I, f, bc, Lx, Ly, Nx, Ny, 0, T, c, turbulence, randomness, noise, performance, user_action=action)
+    timer = solver(I, f, bc, Lx, Ly, Nx, Ny, 0, T, c, turbulence, randomness, noise, performance,version, user_action=action)
     _, peak = tracemalloc.get_traced_memory()
     print(f'Nx: {Nx}')
     print(f'Ny: {Ny}')
@@ -310,4 +452,4 @@ def main(Lx = 200,            # Spatial length in x-axis
 
 
 if __name__ == '__main__':
-    main()
+    main(version='vector')
