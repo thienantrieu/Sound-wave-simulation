@@ -4,6 +4,7 @@
 # Salli vain nämä kaksi tiedostoa
 !comp_wave1D.py
 !wave2D.py
+!integrators_1D.py
 
 # PDF-tiedostot
 *.pdf
