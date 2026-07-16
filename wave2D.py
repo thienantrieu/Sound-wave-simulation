@@ -456,4 +456,4 @@ def main(Lx = 200,           # Spatial length in x-axis
 
 
 if __name__ == '__main__':
-    main(version='vector')
+    main(version='vector', noise=False)
