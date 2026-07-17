@@ -230,12 +230,12 @@ def main(
         _, axs = plt.subplots(2,1,layout='constrained')
         axs[0].plot(ts,receiverA)
         axs[0].set_xlabel('y')
-        axs[0].set_ylabel('Paine-ero')
+        axs[0].set_ylabel('Paine-ero pinnassa')
         axs[0].grid()
 
         axs[1].plot(ts,receiverB)
         axs[1].set_xlabel('y')
-        axs[1].set_ylabel('Paine-ero')
+        axs[1].set_ylabel('Paine-ero pohjassa')
         axs[1].grid()
         plt.show()
 

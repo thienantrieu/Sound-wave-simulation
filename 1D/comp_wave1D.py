@@ -294,4 +294,4 @@ def main(
 
 
 if __name__ == '__main__':
-    main(performance=1, engine='numba')
+    main()
