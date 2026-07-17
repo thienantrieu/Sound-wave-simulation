@@ -23,7 +23,7 @@ Includes:
 ```bash
 git clone https://github.com/thienantrieu/Sound-wave-simulation.git
 cd Sound-wave-simulation
-pip install numpy numba matplotlib requests
+pip install -r requirements.txt
 ```
 
 ## Usage
