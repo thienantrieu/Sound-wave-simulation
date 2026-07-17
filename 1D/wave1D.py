@@ -116,8 +116,8 @@ def solver(I, c, b, D, T, dt, C, randomness, animation, performance, scheme, noi
 
     # reference swap
     u, u_n, u_nm1 = u_nm1, u, u_n
-    receiverA.append(u[0])
-    receiverB.append(u[-1])
+    receiverA.append(u_n[0])
+    receiverB.append(u_n[-1])
 
     # compute each timestep until the end of the simulation
     for n in range(1, Nt):
