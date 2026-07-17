@@ -3,6 +3,7 @@
 
 # Salli vain nämä tiedostot
 !1D/comp_wave1D.py
+!1D/wave1D.py
 !1D/integrators_1D.py
 !2D/wave2D.py
 
