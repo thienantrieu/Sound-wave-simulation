@@ -1,10 +1,10 @@
 # Estä kaikki Python-tiedostot oletuksena
 *.py
 
-# Salli vain nämä kaksi tiedostoa
-!comp_wave1D.py
-!wave2D.py
-!integrators_1D.py
+# Salli vain nämä tiedostot
+!1D/comp_wave1D.py
+!1D/integrators_1D.py
+!2D/wave2D.py
 
 # PDF-tiedostot
 *.pdf
