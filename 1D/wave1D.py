@@ -1,6 +1,8 @@
 # Code adapted from
 # Finite difference methods for wave equations
 # by Langtangen and Linge
+# https://github.com/hplgit/fdm-book
+# Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,7 +10,7 @@ import requests
 import time
 import tracemalloc
 
-def solver(I, c, b, D, T, dt, C, randomness, animation, performance, version, noise, V, f, callback):
+def solver(I, c, b, D, T, dt, C, randomness, animation, performance, scheme, noise, V, f, callback):
     s = time.process_time()
 
     Nt = int(round(T / dt))
@@ -94,13 +96,17 @@ def solver(I, c, b, D, T, dt, C, randomness, animation, performance, version, no
             callback(u_n, xs, ts, 0)
 
     # special first timestep formula
-    if version == 'vectorized':
+    if scheme == 'vector':
         u[1:-1] = u_n[1:-1] - (0.5*b*dt-1)*V(xs[1:-1])*dt + 0.25*C2*((q[1:-1] + q[2:]) * (u_n[2:] - u_n[1:-1]) - (q[1:-1] + q[:-2]) * (u_n[1:-1] - u_n[:-2])) + 0.5*dt2 * f(xs[1:-1], 0)
-    else:
-        #scalar calculations
+    elif scheme == 'scalar':
         for i in range(1, Nx):
             u[i] = u_n[i] - (0.5*b*dt-1)*V(xs[i])*dt + 0.25*C2*((q[i] + q[i+1]) * (u_n[i+1] - u_n[i]) - (q[i] + q[i-1]) * (u_n[i] - u_n[i-1])) + 0.5*dt2 * f(xs[i], 0)
-
+    else: 
+        raise ValueError(
+        f"Unknown scheme={scheme!r}. "
+        f"Allowed schemes: 'vector', 'scalar'."
+    )
+    
     u[0] = u_n[0] - (0.5*b*dt-1)*V(xs[0])*dt + C2 * q[0] * (u_n[1] - u_n[0]) + 0.5*dt2*f(xs[0], 0)
     u[-1] = u_n[-1] - (0.5*b*dt-1)*V(xs[-1])*dt + C2 * q[-1] * (u_n[-2] - u_n[-1]) + 0.5*dt2*f(xs[-1], 0)
 
@@ -127,13 +133,16 @@ def solver(I, c, b, D, T, dt, C, randomness, animation, performance, version, no
         u_nm1 = u_nm1 + u2
 
         # Dampening u[1:-1]
-        if version == 'vectorized':
+        if scheme == 'vector':
             u[1:-1] = (1/(1+0.5*b*dt))*((0.5*b*dt-1)*u_nm1[1:-1] + 2 * u_n[1:-1] + 0.5*C2 * ((q[1:-1] + q[2:]) * (u_n[2:] - u_n[1:-1]) - (q[1:-1] + q[:-2]) * (u_n[1:-1] - u_n[:-2])) + dt2 * f(xs[1:-1], ts[n]))
-        else:  
-            #scalar calculations
+        elif scheme == 'scalar':
             for i in range(1, Nx):
                 u[i] = (1/(1+0.5*b*dt))*((0.5*b*dt-1)*u_nm1[i] + 2 * u_n[i] + 0.5*C2 * ((q[i] + q[i+1]) * (u_n[i+1] - u_n[i]) - (q[i] + q[i-1]) * (u_n[i] - u_n[i-1])) + dt2 * f(xs[i], ts[n]))
-
+        else: 
+            raise ValueError(
+                f"Unknown scheme={scheme!r}. "
+                f"Allowed schemes: 'vector', 'scalar'."
+            )
 
         u[0] = (1/(1+0.5*b*dt))*((0.5*b*dt-1)*u_nm1[0] + 2 * u_n[0] + 2*C2 * q[0] * (u_n[1] - u_n[0]) + dt2 * f(xs[0], ts[n]))
         u[-1] = (1/(1+0.5*b*dt))*((0.5*b*dt-1)*u_nm1[-1] + 2 * u_n[-1] + 2*C2 * q[-1] * (u_n[-2] - u_n[-1]) + dt2 * f(xs[-1], ts[n]))
@@ -192,7 +201,7 @@ def main(
         randomness = False,     # Pseudo-random on default
         animation = True,
         performance = False,
-        version = 'vectorized',
+        scheme = 'vector',
         noise = True
         ):   
 
@@ -210,7 +219,7 @@ def main(
     c_max= maximize_c(c,D)
     dt = D*C/ (Nx * c_max)
 
-    _, _, ts, receiverA, receiverB, timer = solver(I, c,b, D, T, dt, C, randomness, animation, performance, version,noise, V=None, f=None, callback=plotter)
+    _, _, ts, receiverA, receiverB, timer = solver(I, c,b, D, T, dt, C, randomness, animation, performance, scheme,noise, V=None, f=None, callback=plotter)
 
     _, peak = tracemalloc.get_traced_memory()
     print(f'CPU time: {timer} seconds')
