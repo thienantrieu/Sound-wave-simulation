@@ -1,9 +1,9 @@
 # Underwater sound wave propagation simulation
 
-Numerical simulation of underwater sound wave propagation using the finite difference method (central/explicit scheme), based on the 1D acoustic wave equation with depth-dependent sound speed, damping, and configurable boundary conditions. Related to my bachelor's thesis, *"Numerical Modeling of Underwater Sound Wave Propagation in the Gulf of Finland Using the Finite Difference Method."*
+Numerical simulation of underwater sound wave propagation using the finite difference method (central/explicit scheme), based on the 1D acoustic wave equation with depth-dependent sound speed, damping, and configurable boundary conditions. Related to my bachelor's thesis, *"Simulation of underwater sound wave propagation with central difference method."*
 
 Includes:
-- Original one-dimensional underwater sound wave propagation simulation used in Bachelor's Thesis
+- Original one-dimensional underwater sound wave propagation simulation used in bachelor's thesis
 - Complete one-dimensional underwater sound wave propagation simulation with support for Dirichlet or Neumann boundary conditions, variable sound speed profiles, damping, forcing terms, and stochastic noise
 - Two-dimensional simulation, developed as part of follow-up research
 
