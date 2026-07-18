@@ -10,7 +10,7 @@ import requests
 import time
 import tracemalloc
 
-from integrators_1D import RUN_FUNCTIONS
+from wave1D_implementations import RUN_FUNCTIONS
 
 def gen_noise(Nt, I, xs, randomness):
     # define list of random numbers to define when to generate new drop
@@ -138,6 +138,7 @@ def solver(I, c,b, L, T, dt, C, noise, randomness, performance, scheme, engine, 
         if callback is not None:
             callback(u_n, xs, ts, 0)
 
+    # Special first timestep formula
     if scheme == 'vector':
         u[1:-1] = u_n[1:-1] - (0.5 * b * dt - 1) * V(xs[1:-1]) * dt + 0.25 * C2 * (
             (q[1:-1] + q[2:]) * (u_n[2:] - u_n[1:-1]) - (q[1:-1] + q[:-2]) * (u_n[1:-1] - u_n[:-2])
