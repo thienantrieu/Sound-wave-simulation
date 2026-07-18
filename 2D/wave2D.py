@@ -257,9 +257,9 @@ def scheme_scalar_mesh(u, u_1, u_2, k_1, k_2, k_3, k_4,
 
     return u
 
-def init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, pos_x, pos_y, xv,yv,version):
+def init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, pos_x, pos_y, xv,yv,scheme):
 # Load initial condition into u_1
-    if version == 'scalar':
+    if scheme == 'scalar':
         for i in Ix:
             for j in Iy:
                 u_1[i,j] = I(x[i], y[j],pos_x,pos_y)
@@ -267,13 +267,13 @@ def init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, pos_
         u = scheme_scalar_mesh(u, u_1, u_2, 0.5, 0, 0.5, 0.5,
                                 f, dt2, Cx2, Cy2, x, y, t[0],
                                 Nx, Ny, bc)
-    elif version == 'vector': 
+    elif scheme == 'vector': 
         u_1[:,:] = I(xv, yv, pos_x, pos_y)
         u = scheme_vector_mesh(u, u_1, u_2, 0.5, 0, 0.5, 0.5,
                                 f, dt2, Cx2, Cy2, x, y, t[0],
                                 Nx, Ny, bc,xv,yv)
     else: 
-        raise ValueError(f"Unknown version: {version!r}. Allowed values: 'scalar', 'vector'.")
+        raise ValueError(f"Unknown scheme: {scheme!r}. Allowed values: 'scalar', 'vector'.")
 
     u_2[:,:] = u_1
     u_1[:,:] = u
@@ -295,7 +295,7 @@ def gen_random(It, x):
             helper = helper + str(i)
     return random_list
 
-def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, performance, version,
+def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, performance, scheme,
            user_action=None,
            verbose=True):
     
@@ -334,7 +334,7 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
     It = range(0, Nt+1)
 
     if turbulence==False:
-        u, u_1, u_2 = init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, 0, 0, xv, yv, version)
+        u, u_1, u_2 = init_wave(u, u_1, u_2, Ix, Iy, Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, 0, 0, xv, yv, scheme)
 
     wave_length = 4
 
@@ -356,27 +356,27 @@ def solver(I, f, bc, Lx, Ly, Nx, Ny, dt, T ,c ,turbulence , randomness, noise, p
             random_list = np.random.rand(2,len(It))*4*Lx-2*Lx
 
     for n in It[1:-1]:
-        if version == 'scalar':
+        if scheme == 'scalar':
             u = scheme_scalar_mesh(u, u_1, u_2, 1, 1, 1, 1,
                                    f, dt2, Cx2, Cy2, x, y, t[n],
                                    Nx, Ny, bc)
-        elif version == 'vector':
+        elif scheme == 'vector':
             u = scheme_vector_mesh(u, u_1, u_2, 1, 1, 1, 1,
                                    f, dt2, Cx2, Cy2, x, y, t[n],
                                    Nx, Ny, bc, xv, yv)
         else: 
-            raise ValueError(f"Unknown version: {version!r}. Allowed values: 'scalar', 'vector'.")
+            raise ValueError(f"Unknown scheme: {scheme!r}. Allowed values: 'scalar', 'vector'.")
         
         if noise == True:
             if turbulence == True:
                 if n % 10 == 0:
                     for i in range(0,round(wave_length/2)+1):
-                        u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, -Lx/2+t[n],i, xv,yv, version)
+                        u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, -Lx/2+t[n],i, xv,yv, scheme)
                         u = u + u2
                         u_1 = u_1 + u_12
                         u_2 = u_2 + u_22
             else:
-                u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, random_list[0,n],random_list[1,n], xv, yv, version)
+                u2, u_12, u_22 = init_wave(np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), np.zeros((Nx+1,Ny+1)), range(0, Nx+1), range(0, Ny+1), Nx,Ny, Cx2, Cy2, x, y, f, t, dt2, I, bc, random_list[0,n],random_list[1,n], xv, yv, scheme)
                 u = u + u2
                 u_1 = u_1 + u_12
                 u_2 = u_2 + u_22
@@ -406,7 +406,7 @@ def main(Lx = 200,           # Spatial length in x-axis
         randomness = False,  # Pseudo-random on default. Noise needs to be True to have effect
         performance = 0,     # >= 0 shows everything
                              # <= 2 shows only performance metrics 
-        version = 'scalar'   # 'scalar' uses scalar calculations
+        scheme = 'scalar'   # 'scalar' uses scalar calculations
                              # 'vector' uses vector calculations 
          ):
     
@@ -445,7 +445,7 @@ def main(Lx = 200,           # Spatial length in x-axis
         ax.set_title('t=%g' % t[n])
         plt.pause(0.001) 
 
-    timer = solver(I, f, bc, Lx, Ly, Nx, Ny, 0, T, c, turbulence, randomness, noise, performance,version, user_action=action)
+    timer = solver(I, f, bc, Lx, Ly, Nx, Ny, 0, T, c, turbulence, randomness, noise, performance, scheme, user_action=action)
     _, peak = tracemalloc.get_traced_memory()
     print(f'Nx: {Nx}')
     print(f'Ny: {Ny}')
@@ -456,4 +456,4 @@ def main(Lx = 200,           # Spatial length in x-axis
 
 
 if __name__ == '__main__':
-    main(version='vector', noise=False)
+    main(scheme='vector', noise=False)
