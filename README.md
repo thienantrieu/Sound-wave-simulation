@@ -3,9 +3,9 @@
 Numerical simulation of underwater sound wave propagation using the finite difference method (central/explicit scheme), based on the 1D acoustic wave equation with depth-dependent sound speed, damping, and configurable boundary conditions. Related to my bachelor's thesis, *"Simulation of underwater sound wave propagation with central difference method."*
 
 Includes:
-- Original one-dimensional underwater sound wave propagation simulation used in bachelor's thesis
-- Complete one-dimensional underwater sound wave propagation simulation with support for Dirichlet or Neumann boundary conditions, variable sound speed profiles, damping, forcing terms, and stochastic noise
-- Two-dimensional simulation, developed as part of follow-up research
+- Original one-dimensional underwater sound wave propagation simulation used in bachelor's thesis `wave1D.py`
+- Complete one-dimensional underwater sound wave propagation simulation with support for Dirichlet or Neumann boundary conditions, variable sound speed profiles, damping, forcing terms, and stochastic noise `wave1D_extended.py`
+- Two-dimensional simulation, developed as part of follow-up research `wave2D.py`
 
 ## Features
 
@@ -32,14 +32,14 @@ Run the 1D simulation directly:
 
 ```bash
 cd 1D
-python comp_wave1D.py
+python wave1D_extended.py
 ```
 
-Or call `solver()` / `main()` from your own script to customize parameters (depth, CFL number, damping, mesh resolution, pulse type, engine, scheme, etc.) — see the `main()` function in `comp_wave1D.py` for the full parameter list and defaults.
+Or call `solver()` / `main()` from your own script to customize parameters (depth, CFL number, damping, mesh resolution, pulse type, engine, scheme, etc.) — see the `main()` function in `wave1D_extended.py` for the full parameter list and defaults.
 
 ## Method
 
-The wave equation is discretized with a standard second-order central difference scheme in both space and time (explicit, conditionally stable — see the CFL check at runtime). The core update kernels are implemented separately for each (engine, scheme) combination in `integrators_1D.py` and dispatched via a lookup table, so the four variants can be benchmarked against each other without any engine seeing overhead from the others (see `RUN_FUNCTIONS`).
+The wave equation is discretized with a standard second-order central difference scheme in both space and time (explicit, conditionally stable — see the CFL check at runtime). The core update kernels are implemented separately for each (engine, scheme) combination in `wave1D_implementations.py` and dispatched via a lookup table, so the four variants can be benchmarked against each other without any engine seeing overhead from the others (see `RUN_FUNCTIONS`).
 
 A Cython implementation was evaluated as an alternative/addition to the numba backend (see [issue #1](https://github.com/thienantrieu/Sound-wave-simulation/issues/1)) — not pursued, since numba's JIT already reaches near-C performance for this kind of stencil loop.
 

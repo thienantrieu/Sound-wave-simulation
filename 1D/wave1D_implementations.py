@@ -12,14 +12,18 @@ from numba import jit
 def boundaries_python(u, u_n, u_nm1, q, C2, b, dt, dt2, n,
                        f_vals, bd0_dirichlet, bd0_vals, bdL_dirichlet, bdL_vals):
     if bd0_dirichlet:
+        #Dirichlet condition
         u[0] = bd0_vals[n + 1]
     else:
+        # Neumann condition
         u[0] = (1 / (1 + 0.5 * b * dt)) * ((0.5 * b * dt - 1) * u_nm1[0] + 2 * u_n[0]
                 + 2 * C2 * q[0] * (u_n[1] - u_n[0]) + dt2 * f_vals[n, 0])
 
     if bdL_dirichlet:
+        #Dirichlet condition
         u[-1] = bdL_vals[n + 1]
     else:
+        # Neumann condition
         u[-1] = (1 / (1 + 0.5 * b * dt)) * ((0.5 * b * dt - 1) * u_nm1[-1] + 2 * u_n[-1]
                  + 2 * C2 * q[-1] * (u_n[-2] - u_n[-1]) + dt2 * f_vals[n, -1])
     return u
@@ -29,14 +33,18 @@ def boundaries_python(u, u_n, u_nm1, q, C2, b, dt, dt2, n,
 def boundaries_numba(u, u_n, u_nm1, q, C2, b, dt, dt2, n,
                       f_vals, bd0_dirichlet, bd0_vals, bdL_dirichlet, bdL_vals):
     if bd0_dirichlet:
+        #Dirichlet condition
         u[0] = bd0_vals[n + 1]
     else:
+        # Neumann condition
         u[0] = (1 / (1 + 0.5 * b * dt)) * ((0.5 * b * dt - 1) * u_nm1[0] + 2 * u_n[0]
                 + 2 * C2 * q[0] * (u_n[1] - u_n[0]) + dt2 * f_vals[n, 0])
 
     if bdL_dirichlet:
+        #Dirichlet condition
         u[-1] = bdL_vals[n + 1]
     else:
+        # Neumann condition
         u[-1] = (1 / (1 + 0.5 * b * dt)) * ((0.5 * b * dt - 1) * u_nm1[-1] + 2 * u_n[-1]
                  + 2 * C2 * q[-1] * (u_n[-2] - u_n[-1]) + dt2 * f_vals[n, -1])
     return u
