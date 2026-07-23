@@ -48,6 +48,7 @@ A Cython implementation was evaluated as an alternative/addition to the numba ba
 Code adapted in part from Langtangen and Linge, *Finite Difference Methods for Wave Equations* ([fdm-book](https://github.com/hplgit/fdm-book)), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 Development was assisted by **Claude Sonnet 5** (Anthropic), used for:
+- Code review and debugging (e.g. `wave2D.py` vectorization and code rework for `numba` compatibility)
 - Design/architecture discussion (e.g. numba vs. Cython evaluation)
 - Git/GitHub workflow guidance
 
