@@ -11,12 +11,14 @@ Includes:
 
 - **Two integration engines**: `python` (plain NumPy) and `numba` (JIT-compiled via `@jit(nopython=True)`) for performance comparison
 - **Two update schemes**: `vector` (fully vectorized NumPy slicing) and `scalar` (explicit index loop) — useful for comparing vectorization overhead against numba's JIT
+- **Optional parallel execution** (`parallel=True`, `numba` engine only): parallelizes the spatial update within each timestep using `prange`. The time-marching loop itself stays sequential, since each timestep depends on the previous one — only the independent per-point updates within a single step are parallelized. Available for both `scheme` values.
 - **CFL stability check** printed at runtime, based on the Courant number
 - **Configurable boundary conditions**: Dirichlet (fixed value) or a damped/absorbing condition at each end independently
 - **Depth-dependent sound speed** via the empirical Del Grosso/Mackenzie-style formula (temperature- and salinity-dependent, adjustable with depth)
 - **Pulse shapes**: Gaussian, cosine-hat, and half-cosine-hat initial conditions
 - **Optional stochastic forcing** (noise), with true random numbers sourced from random.org (falls back to NumPy's PRNG if the request fails or the step count is too high)
 - Runtime performance metrics (CPU time, peak memory via `tracemalloc`)
+
 
 ## Installation
 
@@ -42,6 +44,50 @@ Or call `solver()` / `main()` from your own script to customize parameters (dept
 The wave equation is discretized with a standard second-order central difference scheme in both space and time (explicit, conditionally stable — see the CFL check at runtime). The core update kernels are implemented separately for each (engine, scheme) combination in `wave1D_implementations.py` and dispatched via a lookup table, so the four variants can be benchmarked against each other without any engine seeing overhead from the others (see `RUN_FUNCTIONS`).
 
 A Cython implementation was evaluated as an alternative/addition to the numba backend (see [issue #1](https://github.com/thienantrieu/Sound-wave-simulation/issues/1)) — not pursued, since numba's JIT already reaches near-C performance for this kind of stencil loop.
+
+## Performance notes
+
+### Scalar vs. vector under parallel execution
+
+With `parallel=True`, the `scalar` scheme (explicit index loop, parallelized with
+`prange`) consistently outperforms the `vector` scheme (NumPy slice-based update,
+parallelized via numba's automatic array fusion) — benchmarked at `Nx=5000` over
+repeated runs.
+
+The likely explanation is how each scheme handles intermediate values within the
+stencil update. The vectorized update
+
+```python
+u[1:-1] = (1 / (1 + 0.5*b*dt)) * ((0.5*b*dt - 1)*u_nm1[1:-1] + 2*u_n[1:-1]
+            + 0.5*C2*((q[1:-1]+q[2:])*(u_n[2:]-u_n[1:-1]) - (q[1:-1]+q[:-2])*(u_n[1:-1]-u_n[:-2]))
+            + dt2*f_vals[n, 1:-1])
+```
+
+chains several NumPy slice operations (`q[1:-1]+q[2:]`, `u_n[2:]-u_n[1:-1]`, etc.).
+Even though numba fuses this into a single parallel region (confirmed with
+`parallel_diagnostics(level=4)`), each sub-expression may still be materialized as
+an intermediate array before being combined. The scalar version
+
+```python
+u[i] = (1 / (1 + 0.5*b*dt)) * ((0.5*b*dt - 1)*u_nm1[i] + 2*u_n[i]
+        + 0.5*C2*((q[i]+q[i+1])*(u_n[i+1]-u_n[i]) - (q[i]+q[i-1])*(u_n[i]-u_n[i-1]))
+        + dt2*f_vals[n, i])
+```
+
+computes the same quantity per grid point using only scalar values, which stay in
+registers rather than being written to and read back from memory.
+
+Since this stencil update is memory-bandwidth-bound rather than compute-bound
+(few floating-point operations per byte read/written), the extra memory traffic
+from intermediate arrays in the vectorized version outweighs whatever benefit
+NumPy's slice syntax would normally offer. This is consistent with the `scalar`
+scheme's noise-application and boundary-update code also being written as
+explicit per-index loops rather than chained array operations, for the same reason.
+
+This result was measured at `Nx=5000`; it has not been verified across a wider
+range of grid sizes or hardware, and the relative overhead of thread
+dispatch/synchronization under `parallel=True` may behave differently at much
+smaller `Nx`.
 
 ## Acknowledgments
 
