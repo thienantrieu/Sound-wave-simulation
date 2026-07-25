@@ -49,7 +49,7 @@ def maximize_c(c,L):
     elif callable(c):
         return max([c(x) for x in np.linspace(0, L, 101)])
 
-def solver(I, c,b, L, T, dt, C, noise, randomness, performance, scheme, engine, V, f, bd_0, bd_L, callback):
+def solver(I, c,b, L, T, dt, C, noise, randomness, performance, scheme, engine, parallel, V, f, bd_0, bd_L, callback):
 
     s = time.process_time()
 
@@ -170,7 +170,7 @@ def solver(I, c,b, L, T, dt, C, noise, randomness, performance, scheme, engine, 
     receiverB[1] = u_n[-1]   
 
     try:
-        run_fn = RUN_FUNCTIONS[(engine, scheme)]
+        run_fn = RUN_FUNCTIONS[(engine, scheme, parallel)]
     except KeyError:
         raise ValueError(
             f"Unknown combination engine={engine!r}, scheme={scheme!r}. "
@@ -242,11 +242,16 @@ def main(
                                     # <= 2 shows only performance metrics 
         scheme = 'vector',          # 'vector' uses vector calculation
                                     # 'scalar' uses scalar calculation
-        engine = 'python'           # 'python' runs through python
-                                    # 'numba'  runs through numba
+        engine = 'python',          # 'python' runs through python
+                                    # 'numba'  runs through numba. With numba animation is not possible
+        parallel = False            # Runs parallel computing when True
         ):   
 
     tracemalloc.start()
+
+    # Force the engine to be numba if using parallel computing
+    if parallel == True:
+        engine = 'numba'
 
     if pulse_type == 'gaussian':
         I = lambda x: np.exp(-0.5*(x / sigma)**2)
@@ -269,12 +274,13 @@ def main(
 
     dt = L / (Nx * c_max)
 
-    ts, receiverA, receiverB, timer = solver(I, c,b, L, T, dt, C, noise, randomness, performance, scheme, engine, V=None, f = None, bd_0=None, bd_L=None, callback=plotter)
+    ts, receiverA, receiverB, timer = solver(I, c,b, L, T, dt, C, noise, randomness, performance, scheme, engine, parallel, V=None, f = None, bd_0=None, bd_L=None, callback=plotter)
 
     _, peak = tracemalloc.get_traced_memory()
     print(f'Nx: {Nx}')
     print(f'Engine: {engine}')
     print(f'Scheme: {scheme}')
+    print(f'Parallel computing: {parallel}')
     print(f'CPU time: {timer} seconds')
     print(f'Peak memory usage: {peak} bytes')
     tracemalloc.stop()
