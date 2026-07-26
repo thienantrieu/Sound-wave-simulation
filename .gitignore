@@ -4,6 +4,7 @@
 # Salli vain nämä tiedostot
 !1D/wave1D_extended.py
 !1D/wave1D.py
+!1D/wave1D_tests.py
 !1D/wave1D_implementations.py
 !2D/wave2D.py
 

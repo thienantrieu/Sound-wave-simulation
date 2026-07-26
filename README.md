@@ -97,6 +97,39 @@ produce bit-identical output (`receiverA`, `receiverB`) under `parallel=True`,
 so the timing difference is not caused by a correctness discrepancy between
 the two implementations.
 
+## Testing
+
+`1D/test_wave1D.py` is a `pytest` sanity-test suite covering `wave1D.py` and
+`wave1D_extended.py`, in the exact-reproduction/verification style used in
+fdm-book's `wave1D_dn.py`: initial conditions and forcing terms are chosen so
+that the *exact* solution is known in closed form (a constant field, a
+manufactured quadratic solution, a plug pulse under reflecting boundaries),
+and the scheme's output is checked against it to machine precision, rather
+than just checked for "reasonable-looking" behaviour.
+
+Covers:
+- **Exact-reproduction tests**: constant solution (any damping), manufactured
+  quadratic solution with matching forcing term (Dirichlet boundaries),
+  plug-pulse round trip under reflecting (Neumann) boundaries
+- **Empirical convergence rate**: a standing-wave eigenfunction of the
+  Neumann-Neumann Laplacian, confirming ~2nd-order accuracy as the mesh is
+  refined at fixed Courant number
+- **Symmetry and damping sanity checks**: symmetric input stays symmetric;
+  added damping strictly reduces peak amplitude
+- **Cross-consistency**: `scalar` vs. `vector`, `python` vs. `numba`, and
+  `parallel=True` vs. `parallel=False` all reproduce identical output for
+  the same input; `wave1D.py` and `wave1D_extended.py` (with Neumann
+  boundaries) agree with each other
+- **Error handling**: unknown `scheme`/`engine` names, and
+  `engine='python'` combined with `parallel=True`, raise `ValueError`
+
+Run from the `1D` directory:
+
+```bash
+pip install pytest
+pytest wave1D_tests.py -v
+```
+
 ## Acknowledgments
 Code adapted in part from Langtangen and Linge, *Finite Difference Methods for Wave Equations* ([fdm-book](https://github.com/hplgit/fdm-book)), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
