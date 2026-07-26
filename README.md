@@ -99,7 +99,7 @@ the two implementations.
 
 ## Testing
 
-`1D/test_wave1D.py` is a `pytest` sanity-test suite covering `wave1D.py` and
+`1D/wave1D_tests.py` is a `pytest` sanity-test suite covering `wave1D.py` and
 `wave1D_extended.py`, in the exact-reproduction/verification style used in
 fdm-book's `wave1D_dn.py`: initial conditions and forcing terms are chosen so
 that the *exact* solution is known in closed form (a constant field, a
