@@ -50,9 +50,9 @@ A Cython implementation was evaluated as an alternative/addition to the numba ba
 ### Scalar vs. vector under parallel execution
 
 With `parallel=True`, the `scalar` scheme (explicit index loop, parallelized with
-`prange`) consistently outperforms the `vector` scheme (NumPy slice-based update,
-parallelized via numba's automatic array fusion) — benchmarked at `Nx=5000` over
-repeated runs.
+`prange`) outperformed the `vector` scheme (NumPy slice-based update, parallelized
+via numba's automatic array fusion) on a multi-core machine, benchmarked at
+`Nx=5000` over repeated runs.
 
 The likely explanation is how each scheme handles intermediate values within the
 stencil update. The vectorized update
@@ -84,10 +84,18 @@ NumPy's slice syntax would normally offer. This is consistent with the `scalar`
 scheme's noise-application and boundary-update code also being written as
 explicit per-index loops rather than chained array operations, for the same reason.
 
+**This result is core-count dependent.** On a single-core machine, `prange`
+cannot parallelize at all — `parallel=True` then only adds thread-management
+overhead with no benefit, and in that setting `vector_parallel` was observed
+to be faster than `scalar_parallel` instead (fewer, more fused parallel regions
+per timestep). The `scalar`-faster result should therefore only be assumed to
+hold on hardware with multiple available cores.
+
 This result was measured at `Nx=5000`; it has not been verified across a wider
-range of grid sizes or hardware, and the relative overhead of thread
-dispatch/synchronization under `parallel=True` may behave differently at much
-smaller `Nx`.
+range of grid sizes, core counts, or hardware. Both schemes were confirmed to
+produce bit-identical output (`receiverA`, `receiverB`) under `parallel=True`,
+so the timing difference is not caused by a correctness discrepancy between
+the two implementations.
 
 ## Acknowledgments
 Code adapted in part from Langtangen and Linge, *Finite Difference Methods for Wave Equations* ([fdm-book](https://github.com/hplgit/fdm-book)), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
