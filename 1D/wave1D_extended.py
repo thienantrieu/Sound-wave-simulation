@@ -6,6 +6,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import textwrap
 import requests
 import time
 import tracemalloc
@@ -224,6 +226,58 @@ class PlotVariableSpeed():
         self.plt.grid()
         self.plt.pause(0.001)
 
+def make_pdf(ts, receiverA, receiverB, Nx, engine, scheme, parallel, timer, peak,
+                   output_path = '1D/report.pdf'):
+    # Testing making text PDF-files. Text is not finalized
+    
+    with PdfPages(output_path) as pdf:
+        fig = plt.figure(figsize=(8.27, 11.69))  # A4
+        fig.suptitle('Report', fontsize=16, weight='bold')
+
+        gs = fig.add_gridspec(3, 1, height_ratios=[1, 2, 2], hspace=0.4, wspace=0.3)
+
+        ax_text = fig.add_subplot(gs[0])
+        ax_text.axis('off')
+        ax_text.text(0.0, 0.9,
+        f'Nx: {Nx}\n'
+        f'Engine: {engine}\n'
+        f'Scheme: {scheme}\n'
+        f'Parallel computing: {parallel}\n'
+        f'CPU time: {timer} seconds\n'
+        f'Peak memory usage: {peak} bytes\n',
+        fontsize=11, va='top', wrap=True)
+
+        ax1 = fig.add_subplot(gs[1, :])
+        ax1.plot(ts,receiverA)
+        ax1.set_xlabel('y')
+        ax1.set_ylabel('Pressure difference at surface')
+        ax1.grid()
+
+        ax2 = fig.add_subplot(gs[2, :])    
+        ax2.plot(ts,receiverB)
+        ax2.set_xlabel('y')
+        ax2.set_ylabel('Pressure difference at bottom')
+        ax2.grid()
+
+        pdf.savefig(fig)
+        plt.close(fig)
+
+        # New page
+        fig = plt.figure(figsize=(8.27, 11.69))  # A4
+        fig.suptitle('Performance metrics', fontsize=16, weight='bold')
+
+        gs = fig.add_gridspec()
+
+        ax_text = fig.add_subplot(gs[0])
+        ax_text.axis('off')
+        teksti = textwrap.fill(f'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquid ex ea commodi consequat. Quis aute iure reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint obcaecat cupiditat non provident, sunt in culpa qui official deserunt mollit anim id est laborum', 
+                               width=90)
+        ax_text.text(0.0, 0.9, teksti, fontsize=11, va='top')
+
+        pdf.savefig(fig)
+        plt.close(fig)
+    return None
+
 def main(
         L = 37,                     # Depth (metres)
         C = 1,                      # CFL condition
@@ -238,8 +292,9 @@ def main(
         noise = True,               # Noise generation
         randomness = False,         # Pseudo-random on default
         performance = 0,            # >= 0 shows everything
-                                    # 1 shows performance metrics and pressure difference at sea bottom and sea surface
-                                    # <= 2 shows only performance metrics 
+                                    # 1 shows performance metrics and pressure difference at sea bottom and sea surface figures
+                                    # <= 2 shows only the performance metrics
+        pdf = False,                # True to make PDF-file out of pressure difference at sea bottom and sea surface figures and performance metrics  
         scheme = 'vector',          # 'vector' uses vector calculation
                                     # 'scalar' uses scalar calculation
         engine = 'python',          # 'python' runs through python
@@ -297,9 +352,12 @@ def main(
         axs[1].set_ylabel('Pressure difference at bottom')
         axs[1].grid()
         plt.show()
+
+    if pdf == True:
+        make_pdf(ts, receiverA, receiverB, Nx, engine, scheme, parallel, timer, peak)
     return Nx, timer, peak
 
 
 if __name__ == '__main__':
-    main()
+    main(performance=2, pdf=True)
     
