@@ -131,27 +131,11 @@ pytest wave1D_tests.py -v
 ```
 
 ## Acknowledgments
-Code adapted in part from Langtangen and Linge, *Finite Difference Methods for Wave Equations* ([fdm-book](https://github.com/hplgit/fdm-book)), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Code adapted in part from Langtangen and Linge, *Finite Difference Methods for
+Wave Equations* ([fdm-book](https://github.com/hplgit/fdm-book)), licensed
+under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-Development was assisted by **Claude Sonnet 5** (Anthropic), used for:
-- Code review and debugging (e.g. `wave2D.py` vectorization; converting
-  lambda-based inputs to pre-evaluated NumPy arrays for numba compatibility)
-- Refactoring `wave1D.py` into `wave1D_extended.py` / `wave1D_implementations.py`
-  for numba's `nopython` requirements: pre-evaluating noise, forcing (`f`), and
-  velocity (`V`) terms into fixed-shape NumPy arrays instead of conditionally-typed
-  values or closures called inside the loop; replacing `list.append()`-based
-  receivers with pre-allocated arrays
-- Design/architecture discussion (e.g. numba vs. Cython evaluation; suggested
-  the `(engine, scheme, parallel)` dispatch-table pattern in
-  `wave1D_implementations.py`, which was implemented as a separate module by
-  the repository owner)
-- Parallel execution design and benchmarking discussion (numba `prange` usage,
-  `parallel_diagnostics` interpretation, scalar vs. vector performance comparison)
-- Git/GitHub workflow guidance
-- README documentation drafting
-
-The Dirichlet/Neumann boundary condition logic, the underlying wave equation
-implementation, and all physical/numerical modeling choices are the repository
-owner's own work. All code decisions, implementation, and testing were carried
-out by the repository owner. AI tools were used as a development aid, not as
-an autonomous contributor.
+Development was assisted by **Claude** (Anthropic) for code review, numba
+refactoring, test suite design, and documentation drafting. All design
+decisions, implementation, and testing were carried out by the repository
+owner.
